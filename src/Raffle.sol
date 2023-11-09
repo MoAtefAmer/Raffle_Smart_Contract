@@ -35,6 +35,7 @@ contract Raffle is VRFConsumerBaseV2 {
     error Raffle__NotEnoughETHSent(); // naming convention for errors
     error Raffle__TransferFailed(); // paying money failed
     error Raffle__RaffleNotOpen(); // Raffle is calculating winner
+    error Raffle__UpkeepNotNeeded(uint currentBalance, uint numPlayers, uint raffleState); // Raffle is calculatin
 
     enum RaffleState {
         OPEN,
@@ -101,11 +102,22 @@ contract Raffle is VRFConsumerBaseV2 {
         return i_entranceFee;
     }
 
-    // 1. pick a random number
-    // 2. use the number to pick a random player
-    // 3. be automatically called
+    function checkUpkeep(
+        bytes memory /*checkData*/
+    ) public view returns (bool upkeepNeeded, bytes memory /*performData*/) {
+        bool timeHasPassed = (block.timestamp - s_lastTimeStamp) >= i_interval;
+        bool isOpen = RaffleState.OPEN == s_raffleState;
+        bool hasBalance = address(this).balance > 0;
+        bool hasPlayers = s_players.length > 0;
+        upkeepNeeded = timeHasPassed && isOpen && hasBalance && hasPlayers;
+        return (upkeepNeeded, "0x0");
+    }
 
-    function pickWinner() external {
+    function performUpkeep(bytes calldata /* performData */) external {
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        if(!upkeepNeeded) {
+            revert Raffle__UpkeepNotNeeded(address(this).balance,s_players.length,uint(s_raffleState));
+        }
         // check to see if some time has passed
         if (block.timestamp - s_lastTimeStamp < i_interval) {
             revert();
@@ -136,7 +148,7 @@ contract Raffle is VRFConsumerBaseV2 {
         s_lastTimeStamp = block.timestamp; // reset the last time stamp
 
         emit WinnerPicked(winner);
-        
+
         (bool success, ) = winner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__TransferFailed();
