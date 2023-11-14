@@ -35,7 +35,11 @@ contract Raffle is VRFConsumerBaseV2 {
     error Raffle__NotEnoughETHSent(); // naming convention for errors
     error Raffle__TransferFailed(); // paying money failed
     error Raffle__RaffleNotOpen(); // Raffle is calculating winner
-    error Raffle__UpkeepNotNeeded(uint currentBalance, uint numPlayers, uint raffleState); // Raffle is calculatin
+    error Raffle__UpkeepNotNeeded(
+        uint currentBalance,
+        uint numPlayers,
+        uint raffleState
+    ); // Raffle is calculatin
 
     enum RaffleState {
         OPEN,
@@ -102,21 +106,29 @@ contract Raffle is VRFConsumerBaseV2 {
         return i_entranceFee;
     }
 
-    function checkUpkeep(
-        bytes memory /*checkData*/
-    ) public view returns (bool upkeepNeeded, bytes memory /*performData*/) {
-        bool timeHasPassed = (block.timestamp - s_lastTimeStamp) >= i_interval;
+   function checkUpkeep(
+        bytes memory /* checkData */
+    )
+        public
+        view
+        returns (bool upkeepNeeded, bytes memory /* performData */)
+    {
         bool isOpen = RaffleState.OPEN == s_raffleState;
-        bool hasBalance = address(this).balance > 0;
+        bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
         bool hasPlayers = s_players.length > 0;
-        upkeepNeeded = timeHasPassed && isOpen && hasBalance && hasPlayers;
-        return (upkeepNeeded, "0x0");
+        bool hasBalance = address(this).balance > 0;
+        upkeepNeeded = (timePassed && isOpen && hasBalance && hasPlayers);
+        return (upkeepNeeded, "0x0"); // can we comment this out?
     }
 
     function performUpkeep(bytes calldata /* performData */) external {
         (bool upkeepNeeded, ) = checkUpkeep("");
-        if(!upkeepNeeded) {
-            revert Raffle__UpkeepNotNeeded(address(this).balance,s_players.length,uint(s_raffleState));
+        if (!upkeepNeeded) {
+            revert Raffle__UpkeepNotNeeded(
+                address(this).balance,
+                s_players.length,
+                uint(s_raffleState)
+            );
         }
         // check to see if some time has passed
         if (block.timestamp - s_lastTimeStamp < i_interval) {
@@ -154,4 +166,18 @@ contract Raffle is VRFConsumerBaseV2 {
             revert Raffle__TransferFailed();
         }
     }
+
+    function getRaffleState() external view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getPlayer(uint indexOfPlayer) external view returns(address){
+
+
+        return s_players[indexOfPlayer];
+
+    }
+
+
+
 }
