@@ -1,4 +1,4 @@
-# include .env
+include .env
 export 
 
 run:;anvil
@@ -22,7 +22,7 @@ deploy:;forge script ${dir}
 coverage-report:; forge coverage --report debug > coverage.txt
 
 
-tests-sepolia:;	forge test --fork-url $$SEPOLIA_RPC_URL
+tests-sepolia:;forge test --fork-url $$SEPOLIA_RPC_URL
 
 
 
