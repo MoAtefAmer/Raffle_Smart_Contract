@@ -42,7 +42,7 @@ contract RaffleTest is Test {
             subscriptionId,
             callbackGasLimit,
             link,
-           
+
         ) = helperConfig.activeNetworkConfig();
 
         vm.deal(PLAYER, STARTING_USER_BALANCE);
@@ -130,6 +130,13 @@ contract RaffleTest is Test {
         raffle.performUpkeep("");
     }
 
+    modifier skipFork() {
+        if (block.chainid != 31337) {
+            return;
+        }
+        _;
+    }
+
     function testPerformUpkeepRevertsIfCheckUpkeepIsFalse() public {
         // Arrange
         uint256 currentBalance = 0;
@@ -172,10 +179,9 @@ contract RaffleTest is Test {
         assert(uint(raffleState) == 1); // 0 = open, 1 = calculating
     }
 
-    function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(uint randomRequestId)
-        public
-        raffleEnteredAndTimePassed
-    {
+    function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(
+        uint randomRequestId
+    ) public raffleEnteredAndTimePassed skipFork {
         vm.expectRevert("nonexistent request");
         // vm.mockCall could be used here...
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
@@ -191,9 +197,10 @@ contract RaffleTest is Test {
         );
     }
 
-        function testFulfillRandomWordsPicksAWinnerResetsAndSendsMoney()
+    function testFulfillRandomWordsPicksAWinnerResetsAndSendsMoney()
         public
-       raffleEnteredAndTimePassed
+        raffleEnteredAndTimePassed
+        skipFork
     {
         address expectedWinner = address(1);
 
@@ -237,8 +244,4 @@ contract RaffleTest is Test {
         assert(winnerBalance == startingBalance + prize);
         assert(endingTimeStamp > startingTimeStamp);
     }
-
-
-
-
 }

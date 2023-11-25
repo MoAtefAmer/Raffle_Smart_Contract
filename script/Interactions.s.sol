@@ -11,15 +11,17 @@ import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 contract CreateSubscription is Script {
     function createSubscriptionUsingConfig() public returns (uint64) {
         HelperConfig helperConfig = new HelperConfig();
-        (, , address vrfCoordinator, , , , ,) = helperConfig
+        (, , address vrfCoordinator, , , , , uint deployerKey) = helperConfig
             .activeNetworkConfig();
+        return createSubscription(vrfCoordinator, deployerKey);
     }
 
     function createSubscription(
-        address vrfCoordinator
+        address vrfCoordinator,
+        uint deployerKey
     ) public returns (uint64) {
         console.log("Create sub", vrfCoordinator);
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         uint64 subId = VRFCoordinatorV2Mock(vrfCoordinator)
             .createSubscription();
 
@@ -41,18 +43,19 @@ contract FundSubscription is Script {
     function fundSubscription(
         address vrfCoordinator,
         uint64 subId,
-        address link
+        address link,
+        uint deployerKey
     ) public {
         console.log("Funding subscription", vrfCoordinator, subId, link);
         if (block.chainid == 31337) {
-            vm.startBroadcast();
+            vm.startBroadcast(deployerKey);
             VRFCoordinatorV2Mock(vrfCoordinator).fundSubscription(
                 subId,
                 FUND_AMOUNT
             );
             vm.stopBroadcast();
         } else {
-            vm.startBroadcast();
+            vm.startBroadcast(deployerKey);
             LinkToken(link).transferAndCall(
                 vrfCoordinator,
                 FUND_AMOUNT,
@@ -76,7 +79,7 @@ contract FundSubscription is Script {
             uint deployerKey
         ) = helperConfig.activeNetworkConfig();
 
-        fundSubscription(vrfCoordinator, subId, link);
+        fundSubscription(vrfCoordinator, subId, link, deployerKey);
     }
 
     function run() external {
@@ -100,7 +103,7 @@ contract AddConsumer is Script {
         vm.stopBroadcast();
     }
 
-        function addConsumerUsingConfig(address mostRecentlyDeployed) public {
+    function addConsumerUsingConfig(address mostRecentlyDeployed) public {
         HelperConfig helperConfig = new HelperConfig();
         (
             ,
